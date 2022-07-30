@@ -1,0 +1,7 @@
+{
+  "try": {
+    "ExportCloudFrontDistributionId": "E6UEN1URL1K5M",
+    "ExportBucketName": "try-landing-page-ui-library-bucket",
+    "ExportLandingPageUIUrl": "https://staging-landing-page-ui-library.showoff.tv"
+  }
+}
