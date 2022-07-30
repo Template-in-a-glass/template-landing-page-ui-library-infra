@@ -27,12 +27,12 @@ export class StaticSite extends Construct {
   constructor(parent: Stack, name: string, properties: StaticSiteProperties) {
     super(parent, name);
 
-    const cloudfrontOAI = new cloudfront.OriginAccessIdentity(this, 'landing-page-ui-library-cloudfront-OAI', {
+    const cloudfrontOAI = new cloudfront.OriginAccessIdentity(this, `${parent.stackName}landing-page-ui-library-cloudfront-OAI`, {
       comment: `Cloudfront Origin Access Identity for ${name}`
     });
 
     // Content bucket
-    const siteBucket = new s3.Bucket(this, 'landing-page-ui-library-bucket', {
+    const siteBucket = new s3.Bucket(this, `${parent.stackName}landing-page-ui-library-bucket`, {
       bucketName: `${parent.stackName}-landing-page-ui-library-bucket`,
       publicReadAccess: false,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -49,16 +49,16 @@ export class StaticSite extends Construct {
       resources: [siteBucket.arnForObjects('*')],
       principals: [new iam.CanonicalUserPrincipal(cloudfrontOAI.cloudFrontOriginAccessIdentityS3CanonicalUserId)]
     }));
-    parent.exportValue(siteBucket.bucketName, { name: 'BucketName' });
+    parent.exportValue(siteBucket.bucketName, { name: `${parent.stackName}BucketName` });
 
     let zone;
     let siteDomain;
     let certificate;
     if (properties.domainName) {
-      zone = route53.HostedZone.fromLookup(this, 'landing-page-ui-library-zone', { domainName: properties.domainName });
+      zone = route53.HostedZone.fromLookup(this, `${parent.stackName}landing-page-ui-library-zone`, { domainName: properties.domainName });
       siteDomain = `${properties.siteSubDomain}.${properties.domainName}`;
       // TLS certificate
-      certificate = new acm.DnsValidatedCertificate(this, 'landing-page-ui-library-site-certificate', {
+      certificate = new acm.DnsValidatedCertificate(this, `${parent.stackName}landing-page-ui-library-site-certificate`, {
         domainName: siteDomain,
         hostedZone: zone,
         // Cloudfront only checks this region for certificates.
@@ -66,7 +66,7 @@ export class StaticSite extends Construct {
       });
     }
 
-    const responseHeaderPolicy = new cloudfront.ResponseHeadersPolicy(this, 'landing-page-ui-library-security-headers-response-header-policy', {
+    const responseHeaderPolicy = new cloudfront.ResponseHeadersPolicy(this, `${parent.stackName}landing-page-ui-library-security-headers-response-header-policy`, {
       comment: 'Security headers response header policy',
       securityHeadersBehavior: {
         contentSecurityPolicy: {
@@ -99,7 +99,7 @@ export class StaticSite extends Construct {
     });
 
     // CloudFront distribution
-    const distribution = new cloudfront.Distribution(this, 'landing-page-ui-library-site-distribution', {
+    const distribution = new cloudfront.Distribution(this, `${parent.stackName}landing-page-ui-library-site-distribution`, {
       certificate,
       defaultRootObject: 'index.html',
       domainNames: siteDomain ? [siteDomain] : [],
@@ -131,18 +131,18 @@ export class StaticSite extends Construct {
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED
       }
     });
-    parent.exportValue(distribution.distributionId, { name: 'CloudFrontDistributionId' });
+    parent.exportValue(distribution.distributionId, { name: `${parent.stackName}CloudFrontDistributionId` });
 
     // Route53 alias record for the CloudFront distribution
     if (zone) {
-      new route53.ARecord(this, 'landing-page-ui-library-site-alias-record', {
+      new route53.ARecord(this, `${parent.stackName}landing-page-ui-library-site-alias-record`, {
         recordName: siteDomain,
         target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
         zone
       });
-      parent.exportValue(`https://${siteDomain}`, { name: 'LandingPageUIUrl' });
+      parent.exportValue(`https://${siteDomain}`, { name: `${parent.stackName}LandingPageUIUrl` });
     } else {
-      parent.exportValue(`https://${distribution.distributionDomainName}`, { name: 'LandingPageUIUrl' });
+      parent.exportValue(`https://${distribution.distributionDomainName}`, { name: `${parent.stackName}LandingPageUIUrl` });
     }
   }
 }
